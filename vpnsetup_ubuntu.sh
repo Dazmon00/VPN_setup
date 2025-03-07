@@ -6,12 +6,6 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-# 安装 qrencode（用于生成二维码）
-if ! command -v qrencode &> /dev/null; then
-  echo "安装 qrencode 以生成二维码..."
-  apt update && apt install -y qrencode
-fi
-
 # 菜单函数
 show_menu() {
   clear
@@ -23,11 +17,11 @@ show_menu() {
   echo "===================="
 }
 
-# 搭建 VPN 函数（终端展示二维码）
+# 搭建 VPN 函数（所有安装集中在此）
 setup_vpn() {
-  echo "正在更新系统并安装 OpenVPN 和 Easy-RSA..."
+  echo "正在更新系统并安装必要软件（openvpn、easy-rsa、qrencode）..."
   apt update && apt upgrade -y
-  apt install -y openvpn easy-rsa
+  apt install -y openvpn easy-rsa qrencode
 
   echo "设置 Easy-RSA 用于生成证书..."
   make-cadir /etc/openvpn/easy-rsa
@@ -136,7 +130,7 @@ remove_vpn() {
   echo "正在移除 VPN..."
   systemctl stop openvpn@server
   systemctl disable openvpn@server
-  apt remove -y openvpn easy-rsa
+  apt remove -y openvpn easy-rsa qrencode
   rm -rf /etc/openvpn/*
   ufw delete allow 1194/udp
   echo "VPN 已移除！"
