@@ -6,12 +6,13 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
+# 定义输出目录
+OUTPUT_DIR="$PWD/vpn_files"
+
 # 菜单函数
 show_menu() {
   clear
-  echo "脚本由@WBTventures社区 @ddazmon编写，免费开源，请勿相信收费"
-  echo "如有问题，可联系推特，仅此只有一个号"
-  echo "================================================================"
+  echo "=== VPN 一键管理脚本 ==="
   echo "1. 搭建 VPN"
   echo "2. 移除 VPN"
   echo "3. 查看日志"
@@ -19,8 +20,14 @@ show_menu() {
   echo "===================="
 }
 
-# 搭建 VPN 函数（所有安装集中在此）
+# 搭建 VPN 函数
 setup_vpn() {
+  # 创建输出目录（如果不存在）
+  if [ ! -d "$OUTPUT_DIR" ]; then
+    mkdir -p "$OUTPUT_DIR"
+    chown $SUDO_USER:$SUDO_USER "$OUTPUT_DIR"
+  fi
+
   echo "正在更新系统并安装必要软件（openvpn、easy-rsa、qrencode）..."
   apt update && apt upgrade -y
   apt install -y openvpn easy-rsa qrencode
@@ -105,13 +112,13 @@ EOF
   cat /etc/openvpn/client1.key >> /etc/openvpn/client1.ovpn
   echo "</key>" >> /etc/openvpn/client1.ovpn
 
-  # 复制客户端文件到用户目录
-  cp /etc/openvpn/client1.ovpn /home/$SUDO_USER/client1.ovpn
-  chown $SUDO_USER:$SUDO_USER /home/$SUDO_USER/client1.ovpn
+  # 复制客户端文件到输出目录
+  cp /etc/openvpn/client1.ovpn "$OUTPUT_DIR/client1.ovpn"
+  chown $SUDO_USER:$SUDO_USER "$OUTPUT_DIR/client1.ovpn"
 
-  # 生成二维码图片文件
+  # 生成二维码图片文件到输出目录
   echo "生成 Shadowrocket 可识别的二维码图片..."
-  QR_FILE="/home/$SUDO_USER/client1_qr.png"
+  QR_FILE="$OUTPUT_DIR/client1_qr.png"
   qrencode -o "$QR_FILE" -s 10 "$(cat /etc/openvpn/client1.ovpn)"
   chown $SUDO_USER:$SUDO_USER "$QR_FILE"
 
@@ -120,8 +127,8 @@ EOF
   qrencode -t ansiutf8 "$(cat /etc/openvpn/client1.ovpn)"
 
   echo "VPN 搭建完成！"
-  echo "客户端配置文件已保存到 /home/$SUDO_USER/client1.ovpn"
-  echo "二维码图片已保存到 /home/$SUDO_USER/client1_qr.png"
+  echo "客户端配置文件已保存到 $OUTPUT_DIR/client1.ovpn"
+  echo "二维码图片已保存到 $OUTPUT_DIR/client1_qr.png"
   echo "请使用 Shadowrocket 扫描上方二维码或导入 client1.ovpn 文件。"
   echo "按任意键返回菜单..."
   read -n 1
